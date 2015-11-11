@@ -46,7 +46,7 @@ class VTKVisualizer(object):
 
         graphLayoutView = vtk.vtkGraphLayoutView()
         graphLayoutView.AddRepresentationFromInput(self.g)
-        graphLayoutView.SetLayoutStrategy("Force Directed")
+        graphLayoutView.SetLayoutStrategy("Random")
         graphLayoutView.GetLayoutStrategy().SetEdgeWeightField(WEIGHTS)
         graphLayoutView.GetLayoutStrategy().SetWeightEdges(1)
 
@@ -68,7 +68,7 @@ class VTKVisualizer(object):
         graphLayoutView.GetInteractor().Start()
 
     def insert_graph(self):
-        with open(self.filename, 'r') as lgl_file:
+        with open(self.filename, 'rb') as lgl_file:
             lgl = lgl_file.read()
 
         starting_vertex = None
@@ -88,7 +88,7 @@ class VTKVisualizer(object):
                 p_v = self.g.AddVertex()
                 starting_vertex = p_v
                 if starting_vertex_index != -1:
-                    self.glyph_scales.SetTuple1(starting_vertex_index, 0.1 * num_of_references)
+                    self.glyph_scales.SetTuple1(starting_vertex_index, 0.5 * num_of_references)
 
                 starting_vertex_index = i
                 num_of_references = 0
