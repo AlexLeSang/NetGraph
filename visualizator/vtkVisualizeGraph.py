@@ -5,19 +5,26 @@ from vtk.vtkRenderingCorePython import vtkGraphToGlyphs
 
 from visualizator.LGLReader import LGLReader
 
+VERTEX_ID = "VertexID"
 SCALINGS = "Scalings"
-
 WEIGHTS = "Weights"
-
 LABELS = "Labels"
 
 
 class VTKVisualizer(object):
     def __init__(self, filename, max_num_of_vertices=-1):
         super(VTKVisualizer, self).__init__()
+        self.label_vertex_id_map = {}
+        self.starting_vertex = None
+        self.starting_vertex_index = -1
+        self.num_of_references = 0
         self.filename = filename
         self.max_num_of_vertices = max_num_of_vertices
         self.g = vtk.vtkMutableDirectedGraph()
+
+        self.vertex_ids = vtk.vtkIntArray()
+        self.vertex_ids.SetNumberOfComponents(1)
+        self.vertex_ids.SetName(VERTEX_ID)
 
         self.labels = vtk.vtkStringArray()
         self.labels.SetNumberOfComponents(1)
@@ -32,10 +39,12 @@ class VTKVisualizer(object):
         self.edge_weights.SetName(WEIGHTS)
 
     def vizualize_grapth(self):
-        self.insert_graph()
         self.g.GetEdgeData().AddArray(self.edge_weights)
         self.g.GetVertexData().AddArray(self.labels)
+        self.g.GetVertexData().AddArray(self.vertex_ids)
+        self.g.GetVertexData().SetPedigreeIds(self.vertex_ids)
         self.g.GetVertexData().AddArray(self.glyph_scales)
+        self.insert_graph()
 
         # num_of_tuples = self.glyph_scales.GetNumberOfTuples()
         # for i in range(num_of_tuples):
@@ -71,42 +80,63 @@ class VTKVisualizer(object):
         with open(self.filename, 'rb') as lgl_file:
             lgl = lgl_file.read()
 
-        starting_vertex = None
-        starting_vertex_index = -1
-        num_of_references = 0
         for i, entry in enumerate(lgl.split(os.linesep)):
-            if i > self.max_num_of_vertices:
+            if self.max_num_of_vertices != -1 and i > self.max_num_of_vertices:
                 break
 
             self.glyph_scales.InsertNextValue(float(1.0))
 
             if LGLReader.is_starting_vertex(entry):
-                primary_label = LGLReader.get_primary_vertex(entry)
-                if not primary_label:
-                    raise ValueError
-
-                p_v = self.g.AddVertex()
-                starting_vertex = p_v
-                if starting_vertex_index != -1:
-                    self.glyph_scales.SetTuple1(starting_vertex_index, 0.5 * num_of_references)
-
-                starting_vertex_index = i
-                num_of_references = 0
-                self.labels.InsertNextValue(primary_label)
+                self._process_primary_vertex(entry, i)
 
             else:
-                secondary_label = LGLReader.get_vertex_label_and_weight(entry)
-                if not secondary_label:
-                    raise ValueError
+                self._process_secondary_vertex(entry, i)
 
-                if isinstance(secondary_label, list):
-                    self.labels.InsertNextValue(secondary_label[0])
-                    self.edge_weights.InsertNextValue(secondary_label[1])
+    def _process_secondary_vertex(self, entry, i):
+        secondary_label = self.get_secondary_vertex_label(entry)
+        s_v = self._add_vertex(i, secondary_label)
+        self.g.AddGraphEdge(self.starting_vertex, s_v)
+        self.num_of_references += 1
 
-                else:
-                    self.labels.InsertNextValue(secondary_label)
-                    self.edge_weights.InsertNextValue(0.5)
+    def _process_primary_vertex(self, entry, i):
+        primary_label = self._get_primary_label(entry)
+        p_v = self._add_vertex(i, primary_label)
+        self._set_primary_vertex_scaling()
+        self.starting_vertex = p_v
+        self.starting_vertex_index = i
+        self.num_of_references = 0
 
-                s_v = self.g.AddVertex()
-                self.g.AddGraphEdge(starting_vertex, s_v)
-                num_of_references += 1
+    def _set_primary_vertex_scaling(self):
+        if self.starting_vertex_index != -1:
+            self.glyph_scales.SetTuple1(self.starting_vertex_index, 0.5 * self.num_of_references)
+
+    def _add_vertex(self, i, label):
+        if label not in self.label_vertex_id_map:
+            self.labels.InsertNextValue(label)
+            vertex_id = self.g.AddVertex(i)
+            self.vertex_ids.InsertNextValue(i)
+            self.label_vertex_id_map[label] = vertex_id
+        else:
+            vertex_id = self.label_vertex_id_map[label]
+
+        return vertex_id
+
+    @staticmethod
+    def _get_primary_label(entry):
+        primary_label = LGLReader.get_primary_vertex(entry)
+        if not primary_label:
+            raise ValueError
+        return primary_label
+
+    def get_secondary_vertex_label(self, entry):
+        label_weight = LGLReader.get_vertex_label_and_weight(entry)
+        if not label_weight:
+            raise ValueError
+        if isinstance(label_weight, list):
+            secondary_label = label_weight[0]
+            self.edge_weights.InsertNextValue(label_weight[1])
+
+        else:
+            secondary_label = label_weight
+            self.edge_weights.InsertNextValue(0.5)
+        return secondary_label
