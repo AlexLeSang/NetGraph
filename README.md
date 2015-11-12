@@ -1,2 +1,2 @@
 # NetGraph
-Usage: python filename.lgl num-of-vertex-to-be-visualized
+Usage: python filename.lgl num-of-vertex-to-be-visualized colors

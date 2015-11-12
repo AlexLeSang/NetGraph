@@ -66,7 +66,7 @@ class VTKVisualizer(object):
 
         graphLayoutView = vtk.vtkGraphLayoutView()
         graphLayoutView.AddRepresentationFromInput(self.g)
-        graphLayoutView.SetLayoutStrategy("Span Tree")
+        graphLayoutView.SetLayoutStrategy("Random")
         graphLayoutView.GetLayoutStrategy().SetEdgeWeightField(WEIGHTS)
         graphLayoutView.GetLayoutStrategy().SetWeightEdges(1)
 
@@ -78,11 +78,11 @@ class VTKVisualizer(object):
             graphLayoutView.ColorEdgesOn()
 
         graphLayoutView.SetVertexLabelArrayName(LABELS)
-        graphLayoutView.SetVertexLabelVisibility(0)
+        graphLayoutView.SetVertexLabelVisibility(1)
 
         graphLayoutView.ScaledGlyphsOn()
         graphLayoutView.SetScalingArrayName(SCALINGS)
-        graphLayoutView.GetRepresentation().SetGlyphType(vtkGraphToGlyphs.SPHERE)
+        graphLayoutView.GetRepresentation().SetGlyphType(vtkGraphToGlyphs.VERTEX)
 
         graphLayoutView.GetRenderWindow().SetSize(1024, 768)
         graphLayoutView.ResetCamera()
@@ -101,7 +101,7 @@ class VTKVisualizer(object):
             if self.max_num_of_vertices != -1 and i > self.max_num_of_vertices:
                 break
 
-            self.glyph_scales.InsertNextValue(float(0.1))
+            self.glyph_scales.InsertNextValue(float(1.0))
 
             if LGLReader.is_starting_vertex(entry):
                 self._process_primary_vertex(entry, i)
