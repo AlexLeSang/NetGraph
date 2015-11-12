@@ -1,6 +1,6 @@
 import unittest
-from visualizator.LGLReader import LGLReader
 
+from visualizator.LGLReader import LGLReader
 
 ONE_EDGE_INPUT = \
     """
@@ -15,6 +15,21 @@ VERTEX_WITHOUT_WEIGHT = "vertex_2"
 
 
 class TestLGLReader(unittest.TestCase):
+    def test_given_incorrect_color_entry_returns_none(self):
+        self.assertEqual(None, LGLReader.get_edge_color_entry(""))
+        self.assertEqual(None, LGLReader.get_edge_color_entry(" "))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("# sdf"))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("v1 v2"))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("v1 v2 d"))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("v1 v2 1.0"))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("v1 v2 1.0 d"))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("v1 v2 1.0 0.4"))
+        self.assertEqual(None, LGLReader.get_edge_color_entry("v1 v2 1.0 0.4 d"))
+
+    def test_given_correct_color_returns_v1_v2_r_g_b_tuple(self):
+        self.assertEqual((('v1', 'v2'), (1.0, 0.4, 0.3)),
+                         LGLReader.get_edge_color_entry("v1 v2 1.0 0.4 0.3"))
+
     def test_given_incorrect_entry_returns_none(self):
         self.assertEqual(None, LGLReader.get_vertex_label_and_weight(''))
         self.assertEqual(None, LGLReader.get_vertex_label_and_weight(' '))

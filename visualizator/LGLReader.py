@@ -28,3 +28,23 @@ class LGLReader(object):
                 return [label, weight]
 
         return None
+
+    @staticmethod
+    def get_edge_color_entry(entry):
+        if not entry:
+            return None
+
+        split_entry = entry.split()
+        if len(split_entry) != 5:
+            return None
+
+        v1 = split_entry[0]
+        v2 = split_entry[1]
+        try:
+            r = float(split_entry[2])
+            g = float(split_entry[3])
+            b = float(split_entry[4])
+        except ValueError:
+            return None
+
+        return (v1, v2), (r, g, b)
