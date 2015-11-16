@@ -5,12 +5,11 @@ from vtk.vtkRenderingCorePython import vtkGraphToGlyphs
 
 from visualizator.LGLReader import LGLReader
 
-EDGE_COLORS = "EdgeColors"
-
-VERTEX_ID = "VertexID"
-SCALINGS = "Scalings"
-WEIGHTS = "Weights"
-LABELS = "Labels"
+EDGE_COLORS = 'EdgeColors'
+VERTEX_ID = 'VertexID'
+SCALES = 'Scales'
+WEIGHTS = 'Weights'
+LABELS = 'Labels'
 
 
 class VTKVisualizer(object):
@@ -38,7 +37,7 @@ class VTKVisualizer(object):
 
         self.glyph_scales = vtk.vtkFloatArray()
         self.glyph_scales.SetNumberOfComponents(1)
-        self.glyph_scales.SetName(SCALINGS)
+        self.glyph_scales.SetName(SCALES)
 
         self.edge_weights = vtk.vtkDoubleArray()
         self.edge_weights.SetNumberOfComponents(1)
@@ -81,7 +80,7 @@ class VTKVisualizer(object):
         graphLayoutView.SetVertexLabelVisibility(1)
 
         graphLayoutView.ScaledGlyphsOn()
-        graphLayoutView.SetScalingArrayName(SCALINGS)
+        graphLayoutView.SetScalingArrayName(SCALES)
         graphLayoutView.GetRepresentation().SetGlyphType(vtkGraphToGlyphs.VERTEX)
 
         graphLayoutView.GetRenderWindow().SetSize(1024, 768)
