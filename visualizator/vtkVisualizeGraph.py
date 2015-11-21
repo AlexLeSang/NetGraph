@@ -15,6 +15,8 @@ LABELS = 'Labels'
 class VTKVisualizer(object):
     def __init__(self, filename, max_num_of_vertices=-1, edge_color_filename=None):
         super(VTKVisualizer, self).__init__()
+        self.vertex_id_idx_map = {}
+        self.next_vertex_id = 0
         self.edge_counter = 0
         self.lookup_table = vtk.vtkLookupTable()
         self.lookup_table.SetNumberOfColors(int(1e8))
@@ -81,7 +83,7 @@ class VTKVisualizer(object):
 
         graphLayoutView.ScaledGlyphsOn()
         graphLayoutView.SetScalingArrayName(SCALES)
-        graphLayoutView.GetRepresentation().SetGlyphType(vtkGraphToGlyphs.VERTEX)
+        graphLayoutView.GetRepresentation().SetGlyphType(vtkGraphToGlyphs.SPHERE)
 
         graphLayoutView.GetRenderWindow().SetSize(1024, 768)
         graphLayoutView.ResetCamera()
@@ -100,18 +102,22 @@ class VTKVisualizer(object):
             if self.max_num_of_vertices != -1 and i > self.max_num_of_vertices:
                 break
 
-            self.glyph_scales.InsertNextValue(float(1.0))
-
             if LGLReader.is_starting_vertex(entry):
                 self._process_primary_vertex(entry, i)
 
             else:
                 self._process_secondary_vertex(entry, i)
 
+    def _update_scaling(self, vertex_id):
+        idx = self.vertex_id_idx_map[vertex_id]
+        self.glyph_scales.SetTuple1(idx, self.glyph_scales.GetTuple1(idx) + 0.1)
+
     def _process_secondary_vertex(self, entry, i):
         secondary_label = self.get_secondary_vertex_label(entry)
         s_v = self._add_vertex(i, secondary_label)
         self.g.AddGraphEdge(self.starting_vertex, s_v)
+        self._update_scaling(self.starting_vertex)
+        self._update_scaling(s_v)
         self.edge_counter += 1
         if self.edge_color_filename:
             key = (self.starting_vertex, s_v)
@@ -135,7 +141,10 @@ class VTKVisualizer(object):
             self.labels.InsertNextValue(label)
             vertex_id = self.g.AddVertex(i)
             self.vertex_ids.InsertNextValue(i)
+            self.vertex_id_idx_map[vertex_id] = self.next_vertex_id
+            self.next_vertex_id += 1
             self.label_vertex_id_map[label] = vertex_id
+            self.glyph_scales.InsertNextValue(float(1.0))
         else:
             vertex_id = self.label_vertex_id_map[label]
 
@@ -146,12 +155,14 @@ class VTKVisualizer(object):
         primary_label = LGLReader.get_primary_vertex(entry)
         if not primary_label:
             raise ValueError
+
         return primary_label
 
     def get_secondary_vertex_label(self, entry):
         label_weight = LGLReader.get_vertex_label_and_weight(entry)
         if not label_weight:
             raise ValueError
+
         if isinstance(label_weight, list):
             secondary_label = label_weight[0]
             self.edge_weights.InsertNextValue(label_weight[1])
@@ -159,6 +170,7 @@ class VTKVisualizer(object):
         else:
             secondary_label = label_weight
             self.edge_weights.InsertNextValue(0.5)
+
         return secondary_label
 
     def read_edge_colors(self):
